@@ -1,0 +1,13 @@
+{
+  "name": "wht-get-ready-for-github",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "get-ready-for-github": "./get-ready-for-github.ts"
+  },
+  "scripts": {
+    "start": "bun get-ready-for-github.ts",
+    "init": "bun get-ready-for-github.ts --init"
+  }
+}
