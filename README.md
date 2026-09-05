@@ -64,17 +64,17 @@ GitHub Releases へ載せるときは `make release` だけ実行します。最
 make release
 ```
 
-桁を上げたいときだけ指定します。
+桁を上げたいとき:
 
 ```bash
-make release BUMP=minor
-make release BUMP=major
+make release-minor
+make release-major
 ```
 
-次の版番号だけ見る場合:
+現在の版と、次の patch / minor / major を見る場合:
 
 ```bash
-make next-version
+make show-version
 ```
 
 作業ツリーがきれいな状態で、タグ作成・darwin/arm64 のビルド・`gh release create` まで行います。Asset 名は `grg` です。取る側は落として実行権限を付け、PATH へ置きます。

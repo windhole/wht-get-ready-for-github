@@ -11,11 +11,12 @@ Status: Accepted
 
 - バージョンの正は `vMAJOR.MINOR.PATCH` 形式の git タグとする。ファイルに版数は持たない。
 - `make release` は origin のタグを取ったうえで、最新タグのパッチを +1 した版でタグ付け・リリースする。タグが無ければ `v0.1.0`。
-- 普段は `make release` だけ実行する。`BUMP=minor` または `BUMP=major` は意図的に桁を上げるときだけ使う。
-- `VERSION=...` の上書きは残すが、通常手順にはしない。
+- 普段は `make release` だけ実行する。桁を上げるときは `make release-minor` または `make release-major` を使う。
+- 現在のタグと次の版番号は `make show-version` で確認する。
+
 
 ## Consequences
 
 - 連続リリースは `v0.1.0` → `v0.1.1` → `v0.1.2` と機械的に進む。
 - リモートのタグを見ないままだと衝突し得るので、リリース前に `git fetch --tags` する。
-- 破壊的変更のときだけ `BUMP=major` を意識すればよい。
+- 破壊的変更のときだけ `make release-major` を意識すればよい。
