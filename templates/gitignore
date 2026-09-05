@@ -1,3 +1,6 @@
+# templates/gitignore — grg が新規プロジェクトに書く .gitignore の元
+# このファイルを編集して make / make release すると反映されます。
+
 # OS
 .DS_Store
 .DS_Store?

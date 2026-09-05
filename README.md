@@ -84,12 +84,16 @@ chmod +x grg
 install -m 0755 grg "$HOME/bin/grg"
 ```
 
+## `.gitignore` のカスタム
+
+`grg` が新規プロジェクトに書く `.gitignore` の中身は、リポジトリの `templates/gitignore` です。このテキストを編集してから `make`（または `make release`）で作り直すと、以降の生成に反映されます。すでに存在するプロジェクトの `.gitignore` は触りません。
+
 ## 実行すること
 
 未実施のものだけ進めます。すでに済んでいる手順は飛ばします。
 
 1. `git init`（未初期化なら。ブランチ名は `main`）
-2. `.gitignore` がなければ作成
+2. `.gitignore` がなければ作成（中身は `templates/gitignore`）
 3. `LICENSE` がなければ Apache-2.0 を作成
 4. 初回コミットがなければ `git add` と `git commit`
 5. `gh repo create` でリモートを作り、`origin` を付けて push

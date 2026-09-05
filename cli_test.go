@@ -41,6 +41,16 @@ func TestParseArgs(t *testing.T) {
 	}
 }
 
+func TestGitignoreTemplateEmbedded(t *testing.T) {
+	t.Parallel()
+	if !strings.Contains(gitignoreTemplate, ".DS_Store") {
+		t.Fatalf("templates/gitignore was not embedded: %q", gitignoreTemplate[:min(80, len(gitignoreTemplate))])
+	}
+	if !strings.HasSuffix(gitignoreTemplate, "\n") {
+		t.Fatal("templates/gitignore should end with a newline")
+	}
+}
+
 func TestIsValidRepoName(t *testing.T) {
 	t.Parallel()
 	ok := []string{"wht-get-ready-for-github", "foo.bar", "a_b", "Repo1"}

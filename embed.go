@@ -4,7 +4,7 @@ import (
 	_ "embed"
 )
 
-//go:embed embed/gitignore.tmpl
+//go:embed templates/gitignore
 var gitignoreTemplate string
 
 //go:embed embed/apache-2.0.txt
