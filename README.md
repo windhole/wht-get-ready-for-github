@@ -1,6 +1,6 @@
 # get-ready-for-github
 
-カレントディレクトリを GitHub（github.com または GitHub Enterprise）のリポジトリとして整えるコマンドです。
+カレントディレクトリを GitHub（github.com または GitHub Enterprise）のリポジトリとして整えるコマンドです。Go の標準ライブラリだけで実装しており、第三者パッケージは使いません。
 
 ディレクトリは先に自分で作っておき、その中で実行します。リポジトリ名はディレクトリ名です。ライセンスは Apache-2.0、公開範囲（private / public）は実行時に確認します。
 
@@ -10,7 +10,6 @@
 
 次が PATH にあり、使える状態であること。
 
-- [bun](https://bun.sh/)
 - git
 - [GitHub CLI (`gh`)](https://cli.github.com/)（対象ホストにログイン済み）
 
@@ -18,28 +17,38 @@
 
 git の `user.name` / `user.email` も、コミットが必要なときはあらかじめ設定しておきます。このコマンドは git config を変更しません。
 
-## 使い方
+ビルドには [Go](https://go.dev/) 1.22 以降が必要です。実行側の Mac には Go は不要です。
 
-リポジトリ用ディレクトリに移動してから実行します。スクリプトのパスは、このリポジトリを置いた場所に合わせてください。
+## 使い方
 
 ```bash
 cd /path/to/my-new-project
 
 # プレビュー（何も書き込まない）
-bun /path/to/wht-get-ready-for-github/get-ready-for-github.ts
+get-ready-for-github
 
 # 実行する（公開範囲を確認してから進む）
-bun /path/to/wht-get-ready-for-github/get-ready-for-github.ts --init
+get-ready-for-github --init
 ```
 
-このリポジトリ自身の中なら、次でも同じです。
+このリポジトリのソースから直接走らせる場合:
 
 ```bash
-bun get-ready-for-github.ts
-bun get-ready-for-github.ts --init
+go run .
+go run . --init
 ```
 
 `--init` のとき、まだリモートが無ければ `private` か `public` を聞きます。端末以外（パイプなど）からは実行できません。
+
+## ビルド
+
+macOS（Apple Silicon）向けの単一バイナリ:
+
+```bash
+GOOS=darwin GOARCH=arm64 go build -o get-ready-for-github
+```
+
+Intel Mac なら `GOARCH=amd64` にします。できたファイルを PATH の通った場所へ置いてください。
 
 ## 実行すること
 
@@ -60,3 +69,4 @@ bun get-ready-for-github.ts --init
 - GitHub Organization 配下への作成
 - README の自動生成
 - すでに `origin` があるリポジトリの作り直し
+- `git` / `gh` 以外のサードパーティライブラリへの依存
