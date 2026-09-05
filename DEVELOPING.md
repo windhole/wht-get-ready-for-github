@@ -4,6 +4,15 @@
 
 Go の標準ライブラリだけで実装しています。第三者パッケージは使いません。実行時に呼ぶ外部コマンドは `git` と `gh` だけです。
 
+## レイアウト
+
+- `src/` … Go のソースと embed 用データ
+- `src/templates/gitignore` … 新規プロジェクトへ書く `.gitignore` の元
+- `dist/` … `make` の成果物（gitignore 対象）
+- `data/` … ローカル作業用（gitignore 対象。リポジトリには含めない）
+- `docs/adr/` … 設計判断
+- `docs/devlog/` … 作業ログ
+
 ## 前提
 
 - [Go](https://go.dev/) 1.22 以降（Homebrew なら `brew install go`）
@@ -12,7 +21,7 @@ Go の標準ライブラリだけで実装しています。第三者パッケ�
 
 ## ビルド
 
-成果物は darwin/arm64 の `grg` です。できたバイナリを Mac に置くときは Go は不要です。
+成果物は `dist/grg`（darwin/arm64）です。できたバイナリを Mac に置くときは Go は不要です。
 
 ```bash
 make
@@ -21,19 +30,19 @@ make
 PATH の通った場所へ置いて使います。
 
 ```bash
-install -m 0755 grg "$HOME/bin/grg"
+install -m 0755 dist/grg "$HOME/bin/grg"
 ```
 
 ソースから直接走らせる場合:
 
 ```bash
-go run .
-go run . --init
+go run ./src
+go run ./src --init
 ```
 
 ## `.gitignore` のカスタム
 
-`grg` が新規プロジェクトに書く `.gitignore` の中身は `templates/gitignore` です。このテキストを編集してから `make`（または `make release`）で作り直すと、以降の生成に反映されます。すでに存在するプロジェクトの `.gitignore` は触りません。
+`grg` が新規プロジェクトに書く `.gitignore` の中身は `src/templates/gitignore` です。このテキストを編集してから `make`（または `make release`）で作り直すと、以降の生成に反映されます。すでに存在するプロジェクトの `.gitignore` は触りません。
 
 ## リリース
 
@@ -56,8 +65,4 @@ make release-major
 make show-version
 ```
 
-作業ツリーがきれいな状態で、タグ作成・darwin/arm64 のビルド・`gh release create` まで行います。Asset 名は `grg` です。
-
-## 設計メモ
-
-判断の記録は `docs/adr/`、作業ログは `docs/devlog/` にあります。
+作業ツリーがきれいな状態で、タグ作成・darwin/arm64 のビルド・`gh release create` まで行います。アップロードするファイルは `dist/grg` で、Release 上の Asset 名は `grg` です。

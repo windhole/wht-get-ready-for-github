@@ -1,4 +1,4 @@
-# 0005. 生成する .gitignore は templates/gitignore を編集して差し替える
+# 0005. 生成する .gitignore は src/templates/gitignore を編集して差し替える
 
 Date: 2026-09-05
 Status: Accepted
@@ -9,9 +9,10 @@ Status: Accepted
 
 ## Decision
 
-- 生成内容の正はリポジトリ直下の `templates/gitignore` とする。プレーンテキストを編集するだけで差し替える。
+- 生成内容の正は `src/templates/gitignore` とする。プレーンテキストを編集するだけで差し替える。
 - ビルド時に `go:embed` でバイナリへ埋め込む。実行時に外部ファイルを読まない。
 - 反映には `make` または `make release` での再ビルドが必要。すでに置いたプロジェクト側の `.gitignore` は上書きしない（未作成のときだけ書く既存仕様のまま）。
+- ディレクトリ配置の詳細は ADR-0006 を参照する。
 
 ## Consequences
 

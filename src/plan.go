@@ -184,7 +184,7 @@ func inspect(h *host) (plan, error) {
 	case hasGitignore(cwd):
 		p.steps = append(p.steps, step{stepGitignore, ".gitignore を作成", actionSkip, "すでに存在する"})
 	default:
-		p.steps = append(p.steps, step{stepGitignore, ".gitignore を作成", actionDo, "templates/gitignore の内容を書く"})
+		p.steps = append(p.steps, step{stepGitignore, ".gitignore を作成", actionDo, "src/templates/gitignore の内容を書く"})
 	}
 
 	switch {
