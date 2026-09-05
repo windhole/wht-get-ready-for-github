@@ -1,6 +1,8 @@
-# This project's binary
-/grg
-/get-ready-for-github
+# Build output
+dist/
+
+# Local working data (not for the repo)
+data/
 
 # OS
 .DS_Store
@@ -30,7 +32,6 @@ ENV/
 vendor/
 
 # Build / test / cache
-dist/
 build/
 out/
 coverage/

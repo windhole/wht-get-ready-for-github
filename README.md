@@ -1,12 +1,10 @@
-# get-ready-for-github
+# grg
 
-カレントディレクトリを GitHub（github.com または GitHub Enterprise）のリポジトリとして整えるコマンドです。実行ファイル名は `grg` です。
+カレントディレクトリを GitHub（github.com または GitHub Enterprise）のリポジトリとして整えるコマンドです。
 
 ディレクトリは先に自分で作っておき、その中で実行します。リポジトリ名はディレクトリ名、ライセンスは Apache-2.0 です。公開範囲（private / public）は実行時に確認します。
 
 書き込みは `--init` を付けたときだけ行います。引数なし（または `--help`）ではヘルプと、**今いるディレクトリで実際に何が起きるか**のプレビューだけを出します。
-
-Go の標準ライブラリだけで実装しています。第三者パッケージは使いません。実行時に呼ぶ外部コマンドは `git` と `gh` だけです。
 
 ## 前提
 
@@ -19,19 +17,16 @@ PATH にあれば足りるもの:
 
 コミットが必要なときは、git の `user.name` / `user.email` も設定しておきます。このコマンドは git config を変更しません。
 
-## ビルド
+## 入れ方
 
-ビルドには [Go](https://go.dev/) 1.22 以降と `make` が必要です。成果物は darwin/arm64 の `grg` です。できたバイナリを Mac に置くときは Go は不要です。
-
-```bash
-make
-```
-
-PATH の通った場所へ置いて使います。
+[Releases](https://github.com/windhole/wht-get-ready-for-github/releases) から `grg` を落とし、実行権限を付けて PATH へ置きます（Apple Silicon の macOS 向けです）。
 
 ```bash
+chmod +x grg
 install -m 0755 grg "$HOME/bin/grg"
 ```
+
+ソースからビルドする場合は [DEVELOPING.md](DEVELOPING.md) を見てください。
 
 ## 使い方
 
@@ -47,42 +42,7 @@ grg
 grg --init
 ```
 
-ソースから直接走らせる場合:
-
-```bash
-go run .
-go run . --init
-```
-
 `--init` のとき、まだリモートが無ければ `private` か `public` を聞きます。端末以外（パイプなど）からは実行できません。
-
-## リリース
-
-GitHub Releases へ載せるときは `make release` だけ実行します。最新の `vX.Y.Z` タグのパッチを 1 つ上げます。タグがまだ無ければ `v0.1.0` です。
-
-```bash
-make release
-```
-
-桁を上げたいとき:
-
-```bash
-make release-minor
-make release-major
-```
-
-現在の版と、次の patch / minor / major を見る場合:
-
-```bash
-make show-version
-```
-
-作業ツリーがきれいな状態で、タグ作成・darwin/arm64 のビルド・`gh release create` まで行います。Asset 名は `grg` です。取る側は落として実行権限を付け、PATH へ置きます。
-
-```bash
-chmod +x grg
-install -m 0755 grg "$HOME/bin/grg"
-```
 
 ## 実行すること
 
@@ -94,7 +54,7 @@ install -m 0755 grg "$HOME/bin/grg"
 4. 初回コミットがなければ `git add` と `git commit`
 5. `gh repo create` でリモートを作り、`origin` を付けて push
 
-`gh repo create --source` は `--license` と同時に使えないため、ライセンスファイルは先にローカルへ置きます。本文は `gh` のライセンス API から取得し、取れなければ内蔵テキストを使います。
+`gh repo create --source` は `--license` と同時に使えないため、ライセンスファイルは先にローカルへ置きます。
 
 親ディレクトリがすでに Git リポジトリのときは、誤ってネストしないよう止まります。`origin` がすでにあればリモート作成はしません。
 

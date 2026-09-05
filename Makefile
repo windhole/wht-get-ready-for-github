@@ -1,19 +1,21 @@
-BINARY := grg
+BINARY := dist/grg
 GOOS := darwin
 GOARCH := arm64
+PKG := ./src
 
 .PHONY: all build test clean show-version release release-minor release-major computed-version do-release
 
 all: build
 
 build:
-	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BINARY) .
+	mkdir -p dist
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BINARY) $(PKG)
 
 test:
-	go test ./...
+	go test $(PKG)/...
 
 clean:
-	rm -f $(BINARY)
+	rm -rf dist
 
 show-version:
 	@git fetch origin --tags >/dev/null 2>&1 || true
