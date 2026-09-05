@@ -1,6 +1,6 @@
 # get-ready-for-github
 
-カレントディレクトリを GitHub（github.com または GitHub Enterprise）のリポジトリとして整えるコマンドです。
+カレントディレクトリを GitHub（github.com または GitHub Enterprise）のリポジトリとして整えるコマンドです。実行ファイル名は `grg` です。
 
 ディレクトリは先に自分で作っておき、その中で実行します。リポジトリ名はディレクトリ名、ライセンスは Apache-2.0 です。公開範囲（private / public）は実行時に確認します。
 
@@ -21,23 +21,16 @@ PATH にあれば足りるもの:
 
 ## ビルド
 
-ビルドには [Go](https://go.dev/) 1.22 以降が必要です。できたバイナリを Mac に置くときは Go は不要です。
+ビルドには [Go](https://go.dev/) 1.22 以降と `make` が必要です。成果物は darwin/arm64 の `grg` です。できたバイナリを Mac に置くときは Go は不要です。
 
 ```bash
-# 今のマシン向け
-go build -o get-ready-for-github
-
-# Apple Silicon の macOS 向け
-GOOS=darwin GOARCH=arm64 go build -o get-ready-for-github
-
-# Intel Mac 向け
-GOOS=darwin GOARCH=amd64 go build -o get-ready-for-github
+make
 ```
 
 PATH の通った場所へ置いて使います。
 
 ```bash
-install -m 0755 get-ready-for-github "$HOME/bin/get-ready-for-github"
+install -m 0755 grg "$HOME/bin/grg"
 ```
 
 ## 使い方
@@ -48,10 +41,10 @@ install -m 0755 get-ready-for-github "$HOME/bin/get-ready-for-github"
 cd /path/to/my-new-project
 
 # プレビュー（何も書き込まない）
-get-ready-for-github
+grg
 
 # 実行する（公開範囲を確認してから進む）
-get-ready-for-github --init
+grg --init
 ```
 
 ソースから直接走らせる場合:
@@ -62,6 +55,34 @@ go run . --init
 ```
 
 `--init` のとき、まだリモートが無ければ `private` か `public` を聞きます。端末以外（パイプなど）からは実行できません。
+
+## リリース
+
+GitHub Releases へ載せるときは `make release` だけ実行します。最新の `vX.Y.Z` タグのパッチを 1 つ上げます。タグがまだ無ければ `v0.1.0` です。
+
+```bash
+make release
+```
+
+桁を上げたいとき:
+
+```bash
+make release-minor
+make release-major
+```
+
+現在の版と、次の patch / minor / major を見る場合:
+
+```bash
+make show-version
+```
+
+作業ツリーがきれいな状態で、タグ作成・darwin/arm64 のビルド・`gh release create` まで行います。Asset 名は `grg` です。取る側は落として実行権限を付け、PATH へ置きます。
+
+```bash
+chmod +x grg
+install -m 0755 grg "$HOME/bin/grg"
+```
 
 ## 実行すること
 
