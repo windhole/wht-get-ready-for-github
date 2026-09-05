@@ -1,7 +1,7 @@
 # 0001. bun 単一ファイル CLI で GitHub リポジトリを初期化する
 
 Date: 2026-09-02
-Status: Accepted
+Status: Superseded by ADR-0002
 
 ## Context
 
