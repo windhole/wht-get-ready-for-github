@@ -58,13 +58,26 @@ go run . --init
 
 ## リリース
 
-GitHub Releases へ載せるときは、バージョンを明示して実行します。作業ツリーがきれいな状態で、タグ作成・darwin/arm64 のビルド・`gh release create` まで行います。
+GitHub Releases へ載せるときは `make release` だけ実行します。最新の `vX.Y.Z` タグのパッチを 1 つ上げます。タグがまだ無ければ `v0.1.0` です。
 
 ```bash
-make release VERSION=v0.1.0
+make release
 ```
 
-Asset 名は `grg` です。取る側は落として実行権限を付け、PATH へ置きます。
+桁を上げたいときだけ指定します。
+
+```bash
+make release BUMP=minor
+make release BUMP=major
+```
+
+次の版番号だけ見る場合:
+
+```bash
+make next-version
+```
+
+作業ツリーがきれいな状態で、タグ作成・darwin/arm64 のビルド・`gh release create` まで行います。Asset 名は `grg` です。取る側は落として実行権限を付け、PATH へ置きます。
 
 ```bash
 chmod +x grg

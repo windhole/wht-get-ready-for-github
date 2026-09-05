@@ -10,8 +10,8 @@ Status: Accepted
 ## Decision
 
 - デフォルトの `make`（および `make build`）は `CGO_ENABLED=0 GOOS=darwin GOARCH=arm64` で `grg` を出力する。
-- `make release VERSION=vX.Y.Z` は、作業ツリーがきれいなことを確認してからテストとビルドし、そのタグを付けて origin に push し、`gh release create` で `grg` を Asset にする。
-- リリース用のバージョンは引数で明示する。自動バンプはしない。
+- `make release` は、作業ツリーがきれいなことを確認してからテストとビルドし、git タグを付けて origin に push し、`gh release create` で `grg` を Asset にする。
+- リリース用のバージョン番号の決め方は ADR-0004 に従う。
 - 対象 OS/Arch は darwin/arm64 のみ。amd64 や linux は作らない。
 
 ## Consequences
