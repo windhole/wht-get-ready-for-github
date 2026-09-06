@@ -10,6 +10,7 @@ import (
 
 type cliArgs struct {
 	help        bool
+	version     bool
 	run         bool
 	profileName string // "" = --init（対話）、"doc" / "dev" = プロファイル
 }
@@ -21,6 +22,7 @@ func parseArgs(argv []string) (cliArgs, error) {
 	init := fs.Bool("init", false, "")
 	doc := fs.Bool("doc", false, "")
 	dev := fs.Bool("dev", false, "")
+	showVersion := fs.Bool("version", false, "")
 	help := fs.Bool("help", false, "")
 	fs.BoolVar(help, "h", false, "")
 
@@ -44,11 +46,16 @@ func parseArgs(argv []string) (cliArgs, error) {
 	if *dev {
 		n++
 	}
+	if *showVersion {
+		n++
+	}
 	if n > 1 {
-		return cliArgs{}, fmt.Errorf("--init / --doc / --dev は同時にどれか 1 つだけ指定してください")
+		return cliArgs{}, fmt.Errorf("--init / --doc / --dev / --version は同時にどれか 1 つだけ指定してください")
 	}
 
 	switch {
+	case *showVersion:
+		out.version = true
 	case *init:
 		out.run = true
 	case *doc:
@@ -61,6 +68,7 @@ func parseArgs(argv []string) (cliArgs, error) {
 
 	if out.help {
 		out.run = false
+		out.version = false
 		out.profileName = ""
 	}
 	return out, nil
@@ -85,12 +93,18 @@ func (c *colorizer) yellow(s string) string {
 }
 func (c *colorizer) red(s string) string { return c.wrap("31", s) }
 
+func printVersion(w io.Writer) {
+	fmt.Fprintf(w, "grg %s\n", versionString())
+}
+
 func printUsage(w io.Writer, c *colorizer, cmd string) {
 	fmt.Fprintf(w, "%s — カレントディレクトリを GitHub リポジトリとして整える\n", c.bold("get-ready-for-github"))
 	fmt.Fprintln(w)
 	fmt.Fprintf(w, "%s\n", c.bold("使い方"))
 	fmt.Fprintf(w, "  %s\n", cmd)
-	fmt.Fprintf(w, "      ヘルプと、このディレクトリで実際に行われる処理のプレビュー（書き込みなし）\n")
+	fmt.Fprintf(w, "      バージョン、ヘルプ、このディレクトリで実際に行われる処理のプレビュー（書き込みなし）\n")
+	fmt.Fprintf(w, "  %s --version\n", cmd)
+	fmt.Fprintf(w, "      バージョンを表示する\n")
 	fmt.Fprintf(w, "  %s --init\n", cmd)
 	fmt.Fprintf(w, "      プレビューどおりに実行する。公開範囲（private / public）は都度確認する\n")
 	fmt.Fprintf(w, "  %s --doc\n", cmd)
@@ -104,7 +118,7 @@ func printUsage(w io.Writer, c *colorizer, cmd string) {
 	fmt.Fprintln(w, "  ・gh は GitHub Enterprise または github.com にログイン済み")
 	fmt.Fprintln(w, "  ・リポジトリ名はディレクトリ名。ライセンスは Apache-2.0（--dev / --init）")
 	fmt.Fprintln(w, "  ・ホスト・ユーザーは gh の現在の認証先に従う（URL は埋め込まない）")
-	fmt.Fprintln(w, "  ・--init / --doc / --dev は同時にどれか 1 つだけ")
+	fmt.Fprintln(w, "  ・--init / --doc / --dev / --version は同時にどれか 1 つだけ")
 	if names := listProfileNames(); len(names) > 0 {
 		fmt.Fprintf(w, "  ・プロファイル: %s\n", strings.Join(names, ", "))
 	}
@@ -119,6 +133,11 @@ func run(h *host) int {
 		return 2
 	}
 
+	if args.version {
+		printVersion(h.stdout)
+		return 0
+	}
+
 	var prof *profileConfig
 	if args.profileName != "" {
 		cfg, err := loadProfile(args.profileName)
@@ -129,7 +148,8 @@ func run(h *host) int {
 		prof = &cfg
 	}
 
-	if !args.run || args.help {
+	if !args.run {
+		printVersion(h.stdout)
 		printUsage(h.stdout, c, h.invocation())
 		h.printf("\n")
 	} else {
