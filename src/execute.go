@@ -96,12 +96,17 @@ func execute(h *host, c *colorizer, p plan) error {
 		}
 	}
 	if needCreate {
-		var err error
-		vis, err = askVisibility(h)
-		if err != nil {
-			return err
+		if p.fixedVisibility != "" {
+			vis = visibility(p.fixedVisibility)
+			h.printf("公開範囲: %s（プロファイル）\n", vis)
+		} else {
+			var err error
+			vis, err = askVisibility(h)
+			if err != nil {
+				return err
+			}
+			h.printf("公開範囲: %s\n", vis)
 		}
-		h.printf("公開範囲: %s\n", vis)
 	}
 
 	cwd := p.cwd

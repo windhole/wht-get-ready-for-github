@@ -19,9 +19,13 @@ func TestParseArgs(t *testing.T) {
 		wantErr bool
 	}{
 		{nil, cliArgs{}, false},
-		{[]string{"--init"}, cliArgs{init: true}, false},
+		{[]string{"--init"}, cliArgs{run: true}, false},
+		{[]string{"--doc"}, cliArgs{run: true, profileName: "doc"}, false},
+		{[]string{"--dev"}, cliArgs{run: true, profileName: "dev"}, false},
 		{[]string{"--help"}, cliArgs{help: true}, false},
-		{[]string{"-h", "--init"}, cliArgs{help: true, init: false}, false},
+		{[]string{"-h", "--init"}, cliArgs{help: true}, false},
+		{[]string{"--init", "--doc"}, cliArgs{}, true},
+		{[]string{"--doc", "--dev"}, cliArgs{}, true},
 		{[]string{"--nope"}, cliArgs{}, true},
 	}
 	for _, tc := range cases {
@@ -95,7 +99,7 @@ func TestInspectEmptyDir(t *testing.T) {
 			return "", errors.New("not found: " + key)
 		}
 	})
-	p, err := inspect(h)
+	p, err := inspect(h, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +141,7 @@ func TestInspectNestedRepo(t *testing.T) {
 			return "", errors.New("not found: " + key)
 		}
 	})
-	p, err := inspect(h)
+	p, err := inspect(h, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +183,7 @@ func TestInspectSkipsExistingFiles(t *testing.T) {
 			return "", errors.New("not found: " + key)
 		}
 	})
-	p, err := inspect(h)
+	p, err := inspect(h, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +223,7 @@ func TestInspectOriginSkipWithoutLogin(t *testing.T) {
 		}
 		return "", exec.ErrNotFound
 	}
-	p, err := inspect(h)
+	p, err := inspect(h, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,6 +302,58 @@ func TestExecuteWritesGitignoreAndLicense(t *testing.T) {
 	joined := strings.Join(live, " | ")
 	if !strings.Contains(joined, "git init -b main") || !strings.Contains(joined, "git commit -m Initial commit") {
 		t.Fatalf("live commands: %v", live)
+	}
+}
+
+func TestLoadProfiles(t *testing.T) {
+	t.Parallel()
+	doc, err := loadProfile("doc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if doc.License || doc.Visibility != "private" {
+		t.Fatalf("doc=%+v", doc)
+	}
+	dev, err := loadProfile("dev")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !dev.License || dev.Visibility != "public" {
+		t.Fatalf("dev=%+v", dev)
+	}
+	names := listProfileNames()
+	if len(names) < 2 {
+		t.Fatalf("names=%v", names)
+	}
+}
+
+func TestInspectDocSkipsLicense(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := fakeHost(t, dir, func(cwd, name string, args ...string) (string, error) {
+		key := strings.Join(append([]string{name}, args...), " ")
+		switch key {
+		case "git config user.name":
+			return "Ada", nil
+		case "git config user.email":
+			return "ada@example.com", nil
+		case "gh api user":
+			return `{"login":"ada","html_url":"https://github.com/ada"}`, nil
+		default:
+			return "", errors.New("not found: " + key)
+		}
+	})
+	cfg, err := loadProfile("doc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := inspect(h, "doc", &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertAction(t, p, stepLicense, actionSkip)
+	if p.fixedVisibility != "private" || p.profileName != "doc" {
+		t.Fatalf("profile=%s visibility=%s", p.profileName, p.fixedVisibility)
 	}
 }
 

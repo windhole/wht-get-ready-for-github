@@ -8,6 +8,7 @@ Go の標準ライブラリだけで実装しています。第三者パッケ�
 
 - `src/` … Go のソースと embed 用データ
 - `src/templates/gitignore` … 新規プロジェクトへ書く `.gitignore` の元
+- `src/profiles/*.json` … `--doc` / `--dev` の設定（ビルド時に埋め込む）
 - `dist/` … `make` の成果物（gitignore 対象）
 - `data/` … ローカル作業用（gitignore 対象。リポジトリには含めない）
 - `docs/adr/` … 設計判断
@@ -38,7 +39,13 @@ install -m 0755 dist/grg "$HOME/bin/grg"
 ```bash
 go run ./src
 go run ./src --init
+go run ./src --doc
+go run ./src --dev
 ```
+
+## プロファイルのカスタム
+
+`--doc` / `--dev` の内容は `src/profiles/doc.json` と `src/profiles/dev.json` です。`license`（LICENSE を書くか）と `visibility`（`private` / `public`）を編集し、`make` または `make release` で作り直すと反映されます。
 
 ## `.gitignore` のカスタム
 
