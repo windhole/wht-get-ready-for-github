@@ -1,30 +1,67 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 type cliArgs struct {
-	init bool
-	help bool
+	help        bool
+	run         bool
+	profileName string // "" = --init（対話）、"doc" / "dev" = プロファイル
 }
 
 func parseArgs(argv []string) (cliArgs, error) {
-	var out cliArgs
-	for _, arg := range argv {
-		switch arg {
-		case "--init":
-			out.init = true
-		case "--help", "-h":
-			out.help = true
-		default:
-			return cliArgs{}, fmt.Errorf("不明な引数: %s", arg)
-		}
+	fs := flag.NewFlagSet("grg", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+
+	init := fs.Bool("init", false, "")
+	doc := fs.Bool("doc", false, "")
+	dev := fs.Bool("dev", false, "")
+	help := fs.Bool("help", false, "")
+	fs.BoolVar(help, "h", false, "")
+
+	if err := fs.Parse(argv); err != nil {
+		return cliArgs{}, fmt.Errorf("不明な引数があります")
 	}
+	if fs.NArg() > 0 {
+		return cliArgs{}, fmt.Errorf("不明な引数: %s", fs.Arg(0))
+	}
+
+	var out cliArgs
+	out.help = *help
+
+	n := 0
+	if *init {
+		n++
+	}
+	if *doc {
+		n++
+	}
+	if *dev {
+		n++
+	}
+	if n > 1 {
+		return cliArgs{}, fmt.Errorf("--init / --doc / --dev は同時にどれか 1 つだけ指定してください")
+	}
+
+	switch {
+	case *init:
+		out.run = true
+	case *doc:
+		out.run = true
+		out.profileName = "doc"
+	case *dev:
+		out.run = true
+		out.profileName = "dev"
+	}
+
 	if out.help {
-		out.init = false
+		out.run = false
+		out.profileName = ""
 	}
 	return out, nil
 }
@@ -56,13 +93,21 @@ func printUsage(w io.Writer, c *colorizer, cmd string) {
 	fmt.Fprintf(w, "      ヘルプと、このディレクトリで実際に行われる処理のプレビュー（書き込みなし）\n")
 	fmt.Fprintf(w, "  %s --init\n", cmd)
 	fmt.Fprintf(w, "      プレビューどおりに実行する。公開範囲（private / public）は都度確認する\n")
+	fmt.Fprintf(w, "  %s --doc\n", cmd)
+	fmt.Fprintf(w, "      doc プロファイルで実行する（LICENSE なし / private）\n")
+	fmt.Fprintf(w, "  %s --dev\n", cmd)
+	fmt.Fprintf(w, "      dev プロファイルで実行する（LICENSE あり / public）\n")
 	fmt.Fprintln(w)
 	fmt.Fprintf(w, "%s\n", c.bold("前提"))
 	fmt.Fprintln(w, "  ・リポジトリ用ディレクトリを作ったうえで、その中で実行する")
 	fmt.Fprintln(w, "  ・git / gh が PATH にある")
 	fmt.Fprintln(w, "  ・gh は GitHub Enterprise または github.com にログイン済み")
-	fmt.Fprintln(w, "  ・リポジトリ名はディレクトリ名。ライセンスは Apache-2.0")
+	fmt.Fprintln(w, "  ・リポジトリ名はディレクトリ名。ライセンスは Apache-2.0（--dev / --init）")
 	fmt.Fprintln(w, "  ・ホスト・ユーザーは gh の現在の認証先に従う（URL は埋め込まない）")
+	fmt.Fprintln(w, "  ・--init / --doc / --dev は同時にどれか 1 つだけ")
+	if names := listProfileNames(); len(names) > 0 {
+		fmt.Fprintf(w, "  ・プロファイル: %s\n", strings.Join(names, ", "))
+	}
 }
 
 func run(h *host) int {
@@ -74,21 +119,30 @@ func run(h *host) int {
 		return 2
 	}
 
-	showHelp := !args.init
-	if showHelp {
+	var prof *profileConfig
+	if args.profileName != "" {
+		cfg, err := loadProfile(args.profileName)
+		if err != nil {
+			h.errorf("%s\n", err.Error())
+			return 2
+		}
+		prof = &cfg
+	}
+
+	if !args.run || args.help {
 		printUsage(h.stdout, c, h.invocation())
 		h.printf("\n")
 	} else {
 		h.printf("\n")
 	}
 
-	p, err := inspect(h)
+	p, err := inspect(h, args.profileName, prof)
 	if err != nil {
 		h.errorf("%s\n", err.Error())
 		return 1
 	}
-	printPlan(h, c, p)
-	if !args.init {
+	printPlan(h, c, p, args)
+	if !args.run {
 		return 0
 	}
 	h.printf("\n")

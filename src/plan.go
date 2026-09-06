@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 type action string
@@ -45,14 +46,16 @@ type step struct {
 }
 
 type plan struct {
-	cwd          string
-	repoName     string
-	host         string
-	login        string
-	gitUserName  string
-	gitUserEmail string
-	remoteKind   remoteKind
-	steps        []step
+	cwd             string
+	repoName        string
+	host            string
+	login           string
+	gitUserName     string
+	gitUserEmail    string
+	remoteKind      remoteKind
+	profileName     string
+	fixedVisibility string // "private" / "public" / ""（都度確認）
+	steps           []step
 }
 
 func (p plan) stepByID(id stepID) (step, bool) {
@@ -110,7 +113,7 @@ type ghRepoView struct {
 	SSHURL string `json:"sshUrl"`
 }
 
-func inspect(h *host) (plan, error) {
+func inspect(h *host, profileName string, prof *profileConfig) (plan, error) {
 	wd, err := h.getwd()
 	if err != nil {
 		return plan{}, err
@@ -120,10 +123,14 @@ func inspect(h *host) (plan, error) {
 		cwd = wd
 	}
 	p := plan{
-		cwd:        cwd,
-		repoName:   filepath.Base(cwd),
-		host:       h.getenv("GH_HOST"),
-		remoteKind: remoteNone,
+		cwd:         cwd,
+		repoName:    filepath.Base(cwd),
+		host:        h.getenv("GH_HOST"),
+		remoteKind:  remoteNone,
+		profileName: profileName,
+	}
+	if prof != nil {
+		p.fixedVisibility = prof.Visibility
 	}
 
 	hasGit := h.hasCommand("git")
@@ -187,9 +194,15 @@ func inspect(h *host) (plan, error) {
 		p.steps = append(p.steps, step{stepGitignore, ".gitignore を作成", actionDo, "src/templates/gitignore の内容を書く"})
 	}
 
+	wantLicense := true
+	if prof != nil {
+		wantLicense = prof.License
+	}
 	switch {
 	case initBlocked:
 		p.steps = append(p.steps, step{stepLicense, "LICENSE を作成", actionBlocked, "git init ができないので中止"})
+	case !wantLicense:
+		p.steps = append(p.steps, step{stepLicense, "LICENSE を作成", actionSkip, "プロファイルにより LICENSE を作らない"})
 	case hasLicense(cwd):
 		p.steps = append(p.steps, step{stepLicense, "LICENSE を作成", actionSkip, "すでに存在する"})
 	default:
@@ -258,9 +271,6 @@ func inspect(h *host) (plan, error) {
 		p.steps = append(p.steps, step{stepRemote, "gh repo create", actionBlocked, "gh にログインしていない（gh auth status を確認）"})
 	case !nameOK:
 		p.steps = append(p.steps, step{stepRemote, "gh repo create", actionBlocked, `ディレクトリ名 "` + p.repoName + `" は GitHub のリポジトリ名に使えない`})
-	case originOK:
-		p.remoteKind = remoteNone
-		p.steps = append(p.steps, step{stepRemote, "gh repo create", actionSkip, remoteName + " がある（" + originURL + "）"})
 	default:
 		raw, err := h.capture(cwd, "gh", "repo", "view", p.login+"/"+p.repoName, "--json", "url,sshUrl")
 		if err == nil {
@@ -277,18 +287,24 @@ func inspect(h *host) (plan, error) {
 			}
 		}
 		p.remoteKind = remoteCreate
+		remoteDetail := p.host + " の " + p.login + "/" + p.repoName + " を作成して origin を付け、push する"
+		if p.fixedVisibility != "" {
+			remoteDetail += "（公開範囲は " + p.fixedVisibility + "）"
+		} else {
+			remoteDetail += "（公開範囲は実行時に確認）"
+		}
 		p.steps = append(p.steps, step{
 			id:     stepRemote,
 			title:  "gh repo create",
 			action: actionDo,
-			detail: p.host + " の " + p.login + "/" + p.repoName + " を作成して origin を付け、push する（公開範囲は実行時に確認）",
+			detail: remoteDetail,
 		})
 	}
 
 	return p, nil
 }
 
-func printPlan(h *host, c *colorizer, p plan) {
+func printPlan(h *host, c *colorizer, p plan, args cliArgs) {
 	todo, blocked := 0, 0
 	for _, s := range p.steps {
 		switch s.action {
@@ -309,7 +325,17 @@ func printPlan(h *host, c *colorizer, p plan) {
 	h.printf("  リポジトリ: %s\n", p.repoName)
 	h.printf("  ホスト:     %s\n", p.host)
 	h.printf("  ユーザー:   %s\n", login)
-	h.printf("  ライセンス: Apache-2.0\n")
+	if p.profileName != "" {
+		h.printf("  プロファイル: %s\n", p.profileName)
+	}
+	if p.fixedVisibility != "" {
+		h.printf("  公開範囲:   %s（固定）\n", p.fixedVisibility)
+	}
+	licenseLabel := "Apache-2.0"
+	if s, ok := p.stepByID(stepLicense); ok && s.action == actionSkip && strings.Contains(s.detail, "作らない") {
+		licenseLabel = "作らない"
+	}
+	h.printf("  ライセンス: %s\n", licenseLabel)
 	if p.gitUserName != "" || p.gitUserEmail != "" {
 		h.printf("  作者:       %s <%s>\n", p.gitUserName, p.gitUserEmail)
 	}
@@ -321,14 +347,25 @@ func printPlan(h *host, c *colorizer, p plan) {
 	}
 	h.printf("\n")
 
+	runHint := h.invocation() + " --init"
+	if args.profileName != "" {
+		runHint = h.invocation() + " --" + args.profileName
+	} else if args.run {
+		runHint = h.invocation() + " --init"
+	}
+
 	switch {
 	case blocked > 0:
-		h.printf("%s\n", c.red("不可が "+strconv.Itoa(blocked)+" 件ある。--init しても途中で止まる。"))
+		h.printf("%s\n", c.red("不可が "+strconv.Itoa(blocked)+" 件ある。実行しても途中で止まる。"))
 	case todo == 0:
-		h.printf("すでに整っているので、--init しても何もしない。\n")
+		h.printf("すでに整っているので、実行しても何もしない。\n")
+	case args.run:
+		h.printf("実行される処理は %s 件。\n", strconv.Itoa(todo))
 	default:
 		h.printf("実行される処理は %s 件。実際に行うには:\n", strconv.Itoa(todo))
-		h.printf("  %s --init\n", h.invocation())
+		h.printf("  %s\n", runHint)
+		h.printf("  %s --doc\n", h.invocation())
+		h.printf("  %s --dev\n", h.invocation())
 	}
 }
 
