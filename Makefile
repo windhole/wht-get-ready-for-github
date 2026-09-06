@@ -3,13 +3,16 @@ GOOS := darwin
 GOARCH := arm64
 PKG := ./src
 
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+LDFLAGS := -X main.version=$(VERSION)
+
 .PHONY: all build test clean show-version release release-minor release-major computed-version do-release
 
 all: build
 
 build:
 	mkdir -p dist
-	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BINARY) $(PKG)
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(PKG)
 
 test:
 	go test $(PKG)/...
@@ -68,7 +71,7 @@ do-release:
 	echo "リリース: $$VERSION"; \
 	if git rev-parse "refs/tags/$$VERSION" >/dev/null 2>&1; then echo "タグ $$VERSION はすでにあります。" >&2; exit 1; fi; \
 	$(MAKE) test; \
-	$(MAKE) build; \
+	$(MAKE) build VERSION=$$VERSION; \
 	git push origin HEAD; \
 	git tag "$$VERSION"; \
 	git push origin "refs/tags/$$VERSION"; \

@@ -22,10 +22,12 @@ Go の標準ライブラリだけで実装しています。第三者パッケ�
 
 ## ビルド
 
-成果物は `dist/grg`（darwin/arm64）です。できたバイナリを Mac に置くときは Go は不要です。
+成果物は `dist/grg`（darwin/arm64）です。できたバイナリを Mac に置くときは Go は不要です。版数は `-ldflags` で `main.version` に埋め込みます。未指定時は `git describe`（無ければ `dev`）です。
 
 ```bash
 make
+make build VERSION=v0.2.0   # 版を明示する場合
+./dist/grg --version
 ```
 
 PATH の通った場所へ置いて使います。

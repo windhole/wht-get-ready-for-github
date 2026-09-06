@@ -22,10 +22,12 @@ func TestParseArgs(t *testing.T) {
 		{[]string{"--init"}, cliArgs{run: true}, false},
 		{[]string{"--doc"}, cliArgs{run: true, profileName: "doc"}, false},
 		{[]string{"--dev"}, cliArgs{run: true, profileName: "dev"}, false},
+		{[]string{"--version"}, cliArgs{version: true}, false},
 		{[]string{"--help"}, cliArgs{help: true}, false},
 		{[]string{"-h", "--init"}, cliArgs{help: true}, false},
 		{[]string{"--init", "--doc"}, cliArgs{}, true},
 		{[]string{"--doc", "--dev"}, cliArgs{}, true},
+		{[]string{"--init", "--version"}, cliArgs{}, true},
 		{[]string{"--nope"}, cliArgs{}, true},
 	}
 	for _, tc := range cases {
@@ -42,6 +44,13 @@ func TestParseArgs(t *testing.T) {
 		if got != tc.want {
 			t.Fatalf("parseArgs(%v)=%+v want %+v", tc.argv, got, tc.want)
 		}
+	}
+}
+
+func TestVersionStringDefault(t *testing.T) {
+	t.Parallel()
+	if versionString() == "" {
+		t.Fatal("version should not be empty")
 	}
 }
 
